@@ -2,12 +2,14 @@
 pragma solidity 0.8.18;
 
 import {BaseTokenizedStrategy} from "@tokenized-strategy/BaseTokenizedStrategy.sol";
+import {HealthCheck} from "@periphery/HealthCheck/HealthCheck.sol";
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-// Import interfaces for many popular DeFi projects, or add your own!
-//import "../interfaces/<protocol>/<Interface>.sol";
+import {IMorpho} from "./interfaces/morpho/IMorpho.sol";
+import {ILens} from "./interfaces/morpho/ILens.sol";
+import {IRewardsDistributor} from "./interfaces/morpho/IRewardsDistributor.sol";
 
 /**
  * The `TokenizedStrategy` variable can be used to retrieve the strategies
@@ -22,13 +24,46 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 
 // NOTE: To implement permissioned functions you can use the onlyManagement and onlyKeepers modifiers
 
-contract Strategy is BaseTokenizedStrategy {
-    using SafeERC20 for ERC20;
+contract Strategy is BaseTokenizedStrategy, HealthCheck {
+    // using SafeERC20 for ERC20;
+
+    // reward token, not currently listed
+    address internal constant MORPHO_TOKEN =
+        0x9994E35Db50125E0DF82e4c2dde62496CE330999;
+    // used for claiming reward Morpho token
+    address public rewardsDistributor =
+        0x3B14E5C73e0A56D607A8688098326fD4b4292135;
+    // Max gas used for matching with p2p deals
+    uint256 public maxGasForMatching = 100000;
+
+    // Morpho is a contract to handle interaction with the protocol
+    IMorpho public morpho;
+    // Lens is a contract to fetch data about Morpho protocol
+    ILens public lens;
+    // aToken = Morpho Aave Market for want token
+    address public aToken;
+
+    /// @notice Emitted when maxGasForMatching is updated.
+    /// @param maxGasForMatching The new maxGasForMatching value.
+    event SetMaxGasForMatching(uint256 maxGasForMatching);
+
+    /// @notice Emitted when rewardsDistributor is updated.
+    /// @param rewardsDistributor The new rewardsDistributor address.
+    event SetRewardsDistributor(address rewardsDistributor);
 
     constructor(
         address _asset,
         string memory _name
-    ) BaseTokenizedStrategy(_asset, _name) {}
+    ) BaseTokenizedStrategy(_asset, _name) {
+        morpho = IMorpho(_morpho);
+        lens = ILens(_lens);
+        aToken = _aToken;
+
+        IMorpho.Market memory market = morpho.market(aToken);
+        require(market.underlyingToken == asset, "!asset");
+
+        ERC20(asset).approve(_morpho, type(uint256).max);
+    }
 
     /*//////////////////////////////////////////////////////////////
                 NEEDED TO BE OVERRIDEN BY STRATEGIST
@@ -46,9 +81,7 @@ contract Strategy is BaseTokenizedStrategy {
      * to deposit in the yield source.
      */
     function _deployFunds(uint256 _amount) internal override {
-        // TODO: implement deposit logice EX:
-        //
-        //      lendingpool.deposit(asset, _amount ,0);
+        morpho.supply(aToken, address(this), _amount, maxGasForMatching);
     }
 
     /**
@@ -73,9 +106,8 @@ contract Strategy is BaseTokenizedStrategy {
      * @param _amount, The amount of 'asset' to be freed.
      */
     function _freeFunds(uint256 _amount) internal override {
-        // TODO: implement withdraw logic EX:
-        //
-        //      lendingPool.withdraw(asset, _amount);
+        // TODO: check if we nned adittional logic for withdraw
+        morpho.withdraw(aToken, _amount);
     }
 
     /**
@@ -105,11 +137,38 @@ contract Strategy is BaseTokenizedStrategy {
         override
         returns (uint256 _totalAssets)
     {
-        // TODO: Implement harvesting logic and accurate accounting EX:
-        //
-        //      _claminAndSellRewards();
-        //      _totalAssets = aToken.balanceof(address(this)) + ERC20(asset).balanceOf(address(this));
-        _totalAssets = ERC20(asset).balanceOf(address(this));
+        // deposit any loose funds in the strategy
+        uint256 looseAsset = _balanceAsset();
+        if (looseAsset > 0 && !TokenizedStrategy.isShutdown()) {
+            morpho.supply(aToken, address(this), looseAsset, maxGasForMatching);
+        }
+        //total assets of the strategy:
+        (, , uint256 totalUnderlying) = underlyingBalance();
+        _invested = _balanceAsset() + totalUnderlying;
+        require(_executHealthCheck(_invested), "!healthcheck)");
+    }
+
+    function _balanceAsset() internal view returns (uint256) {
+        return ERC20(asset).balanceOf(address(this));
+    }
+
+    /**
+     * @notice Returns the value deposited in Morpho protocol
+     * @return balanceInP2P Amount supplied through Morpho that is matched peer-to-peer
+     * @return balanceOnPool Amount supplied through Morpho on the underlying protocol's pool
+     * @return totalBalance Equals `balanceOnPool` + `balanceInP2P`
+     */
+    function underlyingBalance()
+        public
+        view
+        returns (
+            uint256 balanceInP2P,
+            uint256 balanceOnPool,
+            uint256 totalBalance
+        )
+    {
+        (balanceInP2P, balanceOnPool, totalBalance) = lens
+            .getCurrentSupplyBalanceInOf(aToken, address(this));
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -153,36 +212,23 @@ contract Strategy is BaseTokenizedStrategy {
     */
 
     /**
-     * @notice Gets the max amount of `asset` that an adress can deposit.
-     * @dev Defaults to an unlimited amount for any address. But can
-     * be overriden by strategists.
-     *
-     * This function will be called before any deposit or mints to enforce
-     * any limits desired by the strategist. This can be used for either a
-     * traditional deposit limit or for implementing a whitelist etc.
-     *
-     *   EX:
-     *      if(isAllowed[_owner]) return super.availableDepositLimit(_owner);
-     *
-     * This does not need to take into account any conversion rates
-     * from shares to assets. But should know that any non max uint256
-     * amounts may be converted to shares. So it is recommended to keep
-     * custom amounts low enough as not to cause overflow when multiplied
-     * by `totalSupply`.
-     *
-     * @param . The address that is depositing into the strategy.
-     * @return . The avialable amount the `_owner` can deposit in terms of `asset`
-     *
+     * @notice Gets the max amount of `asset` that can be deposited.
+     * @dev Returns 0 if the market is paused.
+     * @param . The address that is depositing to the strategy.
+     * @return . The avialable amount that can be deposited in terms of `asset`
+     */
     function availableDepositLimit(
-        address _owner
+        address //_owner
     ) public view override returns (uint256) {
-        TODO: If desired Implement deposit limit logic and any needed state variables .
-        
-        EX:    
-            uint256 totalAssets = TokenizedStrategy.totalAssets();
-            return totalAssets >= depositLimit ? 0 : depositLimit - totalAssets;
+        IMorpho.MarketPauseStatus memory market = morpho.marketPauseStatus(
+            aToken
+        );
+        if (market.isSupplyPaused || market.isWithdrawPaused) {
+            // don't allow deposit if the market is paused
+            return 0;
+        }
+        return type(uint256).max;
     }
-    */
 
     /**
      * @notice Gets the max amount of `asset` that can be withdrawn.
@@ -201,45 +247,32 @@ contract Strategy is BaseTokenizedStrategy {
      *
      * @param . The address that is withdrawing from the strategy.
      * @return . The avialable amount that can be withdrawn in terms of `asset`
-     *
+     */
     function availableWithdrawLimit(
-        address _owner
+        address //_owner
     ) public view override returns (uint256) {
-        TODO: If desired Implement withdraw limit logic and any needed state variables.
-        
-        EX:    
-            return TokenizedStrategy.totalIdle();
+        IMorpho.MarketPauseStatus memory market = morpho.marketPauseStatus(
+            aToken
+        );
+        if (market.isWithdrawPaused) {
+            return 0;
+        }
+        return type(uint256).max;
     }
-    */
+
 
     /**
      * @dev Optional function for a strategist to override that will
      * allow management to manually withdraw deployed funds from the
      * yield source if a strategy is shutdown.
-     *
-     * This should attempt to free `_amount`, noting that `_amount` may
-     * be more than is currently deployed.
-     *
-     * NOTE: This will not realize any profits or losses. A seperate
-     * {report} will be needed in order to record any profit/loss. If
-     * a report may need to be called after a shutdown it is important
-     * to check if the strategy is shutdown during {_harvestAndReport}
-     * so that it does not simply re-deploy all funds that had been freed.
-     *
-     * EX:
-     *   if(freeAsset > 0 && !TokenizedStrategy.isShutdown()) {
-     *       depositFunds...
-     *    }
-     *
-     * @param _amount The amount of asset to attempt to free.
-     *
+     * @param _amount The amount of asset to attempt to free. Scaled to max available.
+     */
     function _emergencyWithdraw(uint256 _amount) internal override {
-        TODO: If desired implement simple logic to free deployed funds.
+        // Morpho implement Math min so we can pass max wanted amount
+        (, , uint256 totalUnderlying) = underlyingBalance();
+        
 
-        EX:
-            _amount = min(_amount, atoken.balanceOf(address(this)));
-            lendingPool.withdraw(asset, _amount);
+        // https://github.com/morpho-org/morpho-v1/blob/2b4993ccb5ace70005d340298abe631a03a065bc/src/aave-v2/ExitPositionsManager.sol#L160
+        morpho.withdraw(aToken, _amount);
     }
-
-    */
 }

@@ -26,6 +26,7 @@ contract Setup is ExtendedTest, IEvents {
     IStrategyInterface public strategy;
 
     mapping(string => address) public tokenAddrs;
+    mapping(string => address) public aaveTokenAddrs;
 
     // Addresses for different roles we will use repeatedly.
     address public user = address(10);
@@ -49,6 +50,7 @@ contract Setup is ExtendedTest, IEvents {
 
     function setUp() public virtual {
         _setTokenAddrs();
+        _setAaveTokenAddrs();
 
         // Set asset
         asset = ERC20(tokenAddrs["DAI"]);
@@ -123,6 +125,12 @@ contract Setup is ExtendedTest, IEvents {
         deal(address(_asset), _to, balanceBefore + _amount);
     }
 
+    function redeemAll(IStrategyInterface _strategy, address _user) public {
+        uint256 amount = _strategy.balanceOf(_user);
+        vm.prank(_user);
+        _strategy.redeem(amount, _user, _user);
+    }
+
     function getExpectedProtocolFee(
         uint256 _amount,
         uint16 _fee
@@ -154,5 +162,13 @@ contract Setup is ExtendedTest, IEvents {
         tokenAddrs["USDT"] = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
         tokenAddrs["DAI"] = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
         tokenAddrs["USDC"] = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    }
+
+    function _setAaveTokenAddrs() internal {
+        aaveTokenAddrs["WBTC"] = 0x9ff58f4fFB29fA2266Ab25e75e2A8b3503311656;
+        aaveTokenAddrs["WETH"] = 0x030bA81f1c18d280636F32af80b9AAd02Cf0854e;
+        aaveTokenAddrs["USDT"] = 0x3Ed3B47Dd13EC9a98b44e6204A523E766B225811;
+        aaveTokenAddrs["DAI"] = 0x028171bCA77440897B824Ca71D1c56caC55b68A3;
+        aaveTokenAddrs["USDC"] = 0xBcca60bB61934080951369a648Fb03DF4F96263C;
     }
 }

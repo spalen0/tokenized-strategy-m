@@ -14,3 +14,7 @@
 	path = lib/tokenized-strategy-periphery
 	url = https://github.com/schlagonia/tokenized-strategy-periphery
 	branch = master
+[submodule "lib/morpho-utils"]
+	path = lib/morpho-utils
+	url = https://github.com/morpho-dao/morpho-utils
+	branch = master
