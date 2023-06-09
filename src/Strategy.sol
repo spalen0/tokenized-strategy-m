@@ -53,7 +53,10 @@ contract Strategy is BaseTokenizedStrategy, HealthCheck {
 
     constructor(
         address _asset,
-        string memory _name
+        string memory _name,
+        address _morpho,
+        address _lens,
+        address _aToken
     ) BaseTokenizedStrategy(_asset, _name) {
         morpho = IMorpho(_morpho);
         lens = ILens(_lens);
@@ -144,8 +147,8 @@ contract Strategy is BaseTokenizedStrategy, HealthCheck {
         }
         //total assets of the strategy:
         (, , uint256 totalUnderlying) = underlyingBalance();
-        _invested = _balanceAsset() + totalUnderlying;
-        require(_executHealthCheck(_invested), "!healthcheck)");
+        _totalAssets = _balanceAsset() + totalUnderlying;
+        require(_executHealthCheck(_totalAssets), "!healthcheck)");
     }
 
     function _balanceAsset() internal view returns (uint256) {
@@ -274,5 +277,71 @@ contract Strategy is BaseTokenizedStrategy, HealthCheck {
 
         // https://github.com/morpho-org/morpho-v1/blob/2b4993ccb5ace70005d340298abe631a03a065bc/src/aave-v2/ExitPositionsManager.sol#L160
         morpho.withdraw(aToken, _amount);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                    CUSTOM MANAGEMENT FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    /**
+     * @notice Set the maximum amount of gas to consume to get matched in peer-to-peer.
+     * @dev
+     *  This value is needed in Morpho supply liquidity calls.
+     *  Supplyed liquidity goes to loop with current loans on Morpho
+     *  and creates a match for p2p deals. The loop starts from bigger liquidity deals.
+     *  The default value set by Morpho is 100000.
+     * @param _maxGasForMatching new maximum gas value for P2P matching
+     */
+    function setMaxGasForMatching(
+        uint256 _maxGasForMatching
+    ) external onlyManagement {
+        maxGasForMatching = _maxGasForMatching;
+        emit SetMaxGasForMatching(_maxGasForMatching);
+    }
+
+    /**
+     * @notice Set new rewards distributor contract
+     * @param _rewardsDistributor address of new contract
+     */
+    function setRewardsDistributor(
+        address _rewardsDistributor
+    ) external onlyManagement {
+        rewardsDistributor = _rewardsDistributor;
+        emit SetRewardsDistributor(_rewardsDistributor);
+    }
+
+    /**
+     * @notice Claims MORPHO rewards. Use Morpho API to get the data: https://api.morpho.xyz/rewards/{address}
+     * @dev See stages of Morpho rewards distibution: https://docs.morpho.xyz/usdmorpho/ages-and-epochs
+     * @param _account The address of the claimer.
+     * @param _claimable The overall claimable amount of token rewards.
+     * @param _proof The merkle proof that validates this claim.
+     */
+    function claimMorphoRewards(
+        address _account,
+        uint256 _claimable,
+        bytes32[] calldata _proof
+    ) external onlyManagement {
+        require(rewardsDistributor != address(0), "!rewardsDistributor");
+        IRewardsDistributor(rewardsDistributor).claim(
+            _account,
+            _claimable,
+            _proof
+        );
+        // event emitted in claim function
+    }
+
+    /**
+     * @notice Transfer MORPHO tokens to a given address
+     * @dev MORPHO token was launched as non-transferable with the possibility of
+     * allowing the DAO to turn on transferability anytime.
+     * @param _receiver The address that will receive the MORPHO token.
+     * @param _amount The amount of MORPHO token to transfer.
+     */
+    function transferMorpho(
+        address _receiver,
+        uint256 _amount
+    ) external onlyManagement {
+        ERC20(MORPHO_TOKEN).transfer(_receiver, _amount);
     }
 }
