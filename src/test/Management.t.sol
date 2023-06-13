@@ -44,21 +44,30 @@ contract OperationTest is Setup {
         strategy.claimMorphoRewards(user, 100, empty);
     }
 
-    function testTransferMorpho() public {
-        uint256 amount = minFuzzAmount;
+    function testTradeFactory() public {
         ERC20 morpho = ERC20(0x9994E35Db50125E0DF82e4c2dde62496CE330999);
-        airdrop(morpho, address(strategy), amount);
+        address[] memory rewardTokens = new address[](1);
+        rewardTokens[0] = address(morpho);
+        assertEq(strategy.tradeFactory(), address(0));
+        assertEq(strategy.rewardTokens(), rewardTokens);
 
-        // user cannot transfer morpho
+        address tradeFactory = address(0xd6a8ae62f4d593DAf72E2D7c9f7bDB89AB069F06);
+
+        // user cannot change tradeFactory
         vm.prank(user);
         vm.expectRevert("!Authorized");
-        strategy.transferMorpho(user, amount);
-        assertEq(morpho.balanceOf(user), 0);
+        strategy.setTradeFactory(tradeFactory);
 
-        // management can transfer morpho but it will revert on Morpho token side
-        vm.prank(management);
-        vm.expectRevert("UNAUTHORIZED");
-        strategy.transferMorpho(management, amount);
-        assertEq(morpho.balanceOf(management), 0);
+        // management can change tradeFactory
+        vm.startPrank(management);
+        strategy.setTradeFactory(tradeFactory);
+        assertEq(strategy.tradeFactory(), tradeFactory);
+        assertEq(morpho.allowance(address(strategy), strategy.tradeFactory()), type(uint256).max, "!allowance");
+
+        // management can disable tradeFactory
+        vm.startPrank(management);
+        strategy.setTradeFactory(address(0));
+        assertEq(strategy.tradeFactory(), address(0));
+        assertEq(morpho.allowance(address(strategy), tradeFactory), 0, "!allowance");
     }
 }

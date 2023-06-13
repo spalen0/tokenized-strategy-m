@@ -51,8 +51,10 @@ contract EmergencyTest is Setup {
         strategy.emergencyWithdraw(type(uint256).max);
         assertGe(asset.balanceOf(address(strategy)), _amount - 1, "!emergencyWithdrawAll");
 
-        // User can pull his funds with loss
         // TODO: problem with freeFunds(1) that strategy doesn't own
+        // User can pull his funds with loss
+        // console.log("user balance", asset.balanceOf(user));
+        // console.log("user strategy balance", strategy.balanceOf(user));
         // redeemAll(strategy, user);
         // checkStrategyTotals(strategy, 0, 0, 0);
         // assertGe(asset.balanceOf(user), _amount - 1, "!redeem");

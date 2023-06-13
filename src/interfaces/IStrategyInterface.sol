@@ -34,5 +34,9 @@ interface IStrategyInterface is IStrategy {
         bytes32[] calldata _proof
     ) external;
 
-    function transferMorpho(address _receiver, uint256 _amount) external;
+    function setTradeFactory(address _tradeFactory) external;
+
+    function tradeFactory() external view returns (address);
+
+    function rewardTokens() external view returns (address[] memory);
 }

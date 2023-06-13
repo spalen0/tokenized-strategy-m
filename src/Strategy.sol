@@ -3,6 +3,7 @@ pragma solidity 0.8.18;
 
 import {BaseTokenizedStrategy} from "@tokenized-strategy/BaseTokenizedStrategy.sol";
 import {HealthCheck} from "@periphery/HealthCheck/HealthCheck.sol";
+import {TradeFactorySwapper} from "@periphery/swappers/TradeFactorySwapper.sol";
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -24,7 +25,7 @@ import {IRewardsDistributor} from "./interfaces/morpho/IRewardsDistributor.sol";
 
 // NOTE: To implement permissioned functions you can use the onlyManagement and onlyKeepers modifiers
 
-contract Strategy is BaseTokenizedStrategy, HealthCheck {
+contract Strategy is BaseTokenizedStrategy, HealthCheck, TradeFactorySwapper {
     // using SafeERC20 for ERC20;
 
     // reward token, not currently listed
@@ -66,6 +67,8 @@ contract Strategy is BaseTokenizedStrategy, HealthCheck {
         require(market.underlyingToken == asset, "!asset");
 
         ERC20(asset).approve(_morpho, type(uint256).max);
+        // add reward token for swapping
+        _addToken(MORPHO_TOKEN, asset);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -275,6 +278,12 @@ contract Strategy is BaseTokenizedStrategy, HealthCheck {
         morpho.withdraw(aToken, _amount);
     }
 
+    // override TradeFactory virtual function
+    function _claimRewards() internal override {
+        // cannot automate claiming rewards
+        // see function claimMorphoRewards()
+    }
+
     /*//////////////////////////////////////////////////////////////
                     CUSTOM MANAGEMENT FUNCTIONS
     //////////////////////////////////////////////////////////////*/
@@ -328,16 +337,15 @@ contract Strategy is BaseTokenizedStrategy, HealthCheck {
     }
 
     /**
-     * @notice Transfer MORPHO tokens to a given address
-     * @dev MORPHO token was launched as non-transferable with the possibility of
-     * allowing the DAO to turn on transferability anytime.
-     * @param _receiver The address that will receive the MORPHO token.
-     * @param _amount The amount of MORPHO token to transfer.
+     * @notice Set the trade factory contract address.
+     * @dev For disabling set address(0).
+     * @param _tradeFactory The address of the trade factory contract.
      */
-    function transferMorpho(
-        address _receiver,
-        uint256 _amount
-    ) external onlyManagement {
-        ERC20(MORPHO_TOKEN).transfer(_receiver, _amount);
+    function setTradeFactory(address _tradeFactory) external onlyManagement {
+        if (_tradeFactory == address(0)) {
+            _removeTradeFactoryPermissions();
+        } else {
+            _setTradeFactory(_tradeFactory, asset);
+        }
     }
 }
