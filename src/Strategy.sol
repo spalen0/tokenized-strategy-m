@@ -109,7 +109,8 @@ contract Strategy is BaseTokenizedStrategy, HealthCheck {
      * @param _amount, The amount of 'asset' to be freed.
      */
     function _freeFunds(uint256 _amount) internal override {
-        // TODO: check if we nned adittional logic for withdraw
+        // morpho scales down amount to max available
+        // https://github.com/morpho-org/morpho-v1/blob/2b4993ccb5ace70005d340298abe631a03a065bc/src/aave-v2/ExitPositionsManager.sol#L160
         morpho.withdraw(aToken, _amount);
     }
 
@@ -271,11 +272,6 @@ contract Strategy is BaseTokenizedStrategy, HealthCheck {
      * @param _amount The amount of asset to attempt to free. Scaled to max available.
      */
     function _emergencyWithdraw(uint256 _amount) internal override {
-        // Morpho implement Math min so we can pass max wanted amount
-        (, , uint256 totalUnderlying) = underlyingBalance();
-        
-
-        // https://github.com/morpho-org/morpho-v1/blob/2b4993ccb5ace70005d340298abe631a03a065bc/src/aave-v2/ExitPositionsManager.sol#L160
         morpho.withdraw(aToken, _amount);
     }
 

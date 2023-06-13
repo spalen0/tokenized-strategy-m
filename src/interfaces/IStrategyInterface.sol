@@ -20,10 +20,6 @@ interface IStrategyInterface is IStrategy {
         );
 
     // management
-    function emergencyWithdraw(uint256 _amount) external;
-
-    function emergencyWithdrawAll() external;
-
     function maxGasForMatching() external view returns (uint256);
 
     function setMaxGasForMatching(uint256 _maxGasForMatching) external;

@@ -50,6 +50,11 @@ contract OperationTest is Setup {
         vm.prank(user);
         strategy.redeem(_amount, user, user);
 
+        // collect all earned fees
+        uint256 expectedFees = (profit * strategy.performanceFee()) / MAX_BPS;
+        redeemAll(strategy, performanceFeeRecipient);
+        assertGe(asset.balanceOf(performanceFeeRecipient), expectedFees, "!fee balance");
+
         // DONE: Adjust if there are fees
         checkStrategyTotals(strategy, 0, 0, 0);
 
@@ -94,6 +99,11 @@ contract OperationTest is Setup {
         // Withdraw all funds
         vm.prank(user);
         strategy.redeem(_amount, user, user);
+
+        // collect all earned fees
+        uint256 expectedFees = (profit * strategy.performanceFee()) / MAX_BPS;
+        redeemAll(strategy, performanceFeeRecipient);
+        assertGe(asset.balanceOf(performanceFeeRecipient), expectedFees, "!fee balance");
 
         // DONE: Adjust if there are fees
         checkStrategyTotals(strategy, 0, 0, 0);
@@ -204,6 +214,7 @@ contract OperationTest is Setup {
         // Report profit
         vm.prank(keeper);
         (uint256 profit, uint256 loss) = strategy.report();
+        uint256 totalProfit = profit;
 
         // Check return Values
         assertGe(profit, _profit, "!profit"); // profit should be at least airdrop amount
@@ -225,6 +236,7 @@ contract OperationTest is Setup {
         // Report profit
         vm.prank(keeper);
         (profit, loss) = strategy.report();
+        totalProfit += profit;
 
         // Check return Values
         assertGe(profit, 0, "!profit"); // no airdrop so profit can be mininmal
@@ -241,6 +253,11 @@ contract OperationTest is Setup {
         assertGt(asset.balanceOf(user), _amount, "!final balance");
         assertGt(asset.balanceOf(secondUser), secondUserAmount, "!final balance");
         assertGt(asset.balanceOf(thirdUser), thirdUserAmount, "!final balance");
+
+        // collect all earned fees
+        uint256 expectedFees = (totalProfit * strategy.performanceFee()) / MAX_BPS;
+        redeemAll(strategy, performanceFeeRecipient);
+        assertGe(asset.balanceOf(performanceFeeRecipient), expectedFees, "!fee balance");
 
         // verify vault is empty
         checkStrategyTotals(strategy, 0, 0, 0);

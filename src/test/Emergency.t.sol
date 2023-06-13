@@ -20,6 +20,10 @@ contract EmergencyTest is Setup {
         // DONE: Implement logic so totalDebt is _amount and totalIdle = 0.
         checkStrategyTotals(strategy, _deposit, _deposit, 0);
 
+        // shutdown strategy
+        vm.prank(management);
+        strategy.shutdownStrategy();
+
         // withdraw some funds
         vm.prank(management);
         strategy.emergencyWithdraw(_withdraw);
@@ -29,7 +33,7 @@ contract EmergencyTest is Setup {
         redeemAll(strategy, user);
 
         checkStrategyTotals(strategy, 0, 0, 0);
-        // assertEq(asset.balanceOf(user), _deposit, "!redeem");
+        assertGe(asset.balanceOf(user), _deposit - 1, "!redeem");
     }
 
     function test_emergencyWithdrawAll(uint256 _amount) public {
@@ -39,14 +43,18 @@ contract EmergencyTest is Setup {
         mintAndDepositIntoStrategy(strategy, user, _amount);
         checkStrategyTotals(strategy, _amount, _amount, 0);
 
+        // shutdown strategy
         vm.prank(management);
-        strategy.emergencyWithdrawAll();
-        assertApproxEqRel(asset.balanceOf(address(strategy)), _amount, 0.9e18, "!emergencyWithdrawAll");
+        strategy.shutdownStrategy();
 
-        // TODO: see how to handle user funds
+        vm.prank(management);
+        strategy.emergencyWithdraw(type(uint256).max);
+        assertGe(asset.balanceOf(address(strategy)), _amount - 1, "!emergencyWithdrawAll");
+
         // User can pull his funds with loss
+        // TODO: problem with freeFunds(1) that strategy doesn't own
         // redeemAll(strategy, user);
         // checkStrategyTotals(strategy, 0, 0, 0);
-        // assertEq(asset.balanceOf(user), _deposit, "!redeem");
+        // assertGe(asset.balanceOf(user), _amount - 1, "!redeem");
     }
 }
