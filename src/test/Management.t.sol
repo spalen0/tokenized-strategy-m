@@ -51,7 +51,9 @@ contract OperationTest is Setup {
         assertEq(strategy.tradeFactory(), address(0));
         assertEq(strategy.rewardTokens(), rewardTokens);
 
-        address tradeFactory = address(0xd6a8ae62f4d593DAf72E2D7c9f7bDB89AB069F06);
+        address tradeFactory = address(
+            0xd6a8ae62f4d593DAf72E2D7c9f7bDB89AB069F06
+        );
 
         // user cannot change tradeFactory
         vm.prank(user);
@@ -62,12 +64,20 @@ contract OperationTest is Setup {
         vm.startPrank(management);
         strategy.setTradeFactory(tradeFactory);
         assertEq(strategy.tradeFactory(), tradeFactory);
-        assertEq(morpho.allowance(address(strategy), strategy.tradeFactory()), type(uint256).max, "!allowance");
+        assertEq(
+            morpho.allowance(address(strategy), strategy.tradeFactory()),
+            type(uint256).max,
+            "!allowance"
+        );
 
         // management can disable tradeFactory
         vm.startPrank(management);
         strategy.setTradeFactory(address(0));
         assertEq(strategy.tradeFactory(), address(0));
-        assertEq(morpho.allowance(address(strategy), tradeFactory), 0, "!allowance");
+        assertEq(
+            morpho.allowance(address(strategy), tradeFactory),
+            0,
+            "!allowance"
+        );
     }
 }

@@ -53,7 +53,11 @@ contract OperationTest is Setup {
         // collect all earned fees
         uint256 expectedFees = (profit * strategy.performanceFee()) / MAX_BPS;
         redeemAll(strategy, performanceFeeRecipient);
-        assertGe(asset.balanceOf(performanceFeeRecipient), expectedFees, "!fee balance");
+        assertGe(
+            asset.balanceOf(performanceFeeRecipient),
+            expectedFees,
+            "!fee balance"
+        );
 
         // DONE: Adjust if there are fees
         checkStrategyTotals(strategy, 0, 0, 0);
@@ -103,7 +107,11 @@ contract OperationTest is Setup {
         // collect all earned fees
         uint256 expectedFees = (profit * strategy.performanceFee()) / MAX_BPS;
         redeemAll(strategy, performanceFeeRecipient);
-        assertGe(asset.balanceOf(performanceFeeRecipient), expectedFees, "!fee balance");
+        assertGe(
+            asset.balanceOf(performanceFeeRecipient),
+            expectedFees,
+            "!fee balance"
+        );
 
         // DONE: Adjust if there are fees
         checkStrategyTotals(strategy, 0, 0, 0);
@@ -181,9 +189,15 @@ contract OperationTest is Setup {
         );
     }
 
-    function test_profitableReport_withMutipleUsers(uint256 _amount, uint16 _divider, uint16 _secondDivider) public {
+    function test_profitableReport_withMutipleUsers(
+        uint256 _amount,
+        uint16 _divider,
+        uint16 _secondDivider
+    ) public {
         uint256 maxDivider = 100000;
-        vm.assume(_amount > minFuzzAmount * maxDivider && _amount < maxFuzzAmount);
+        vm.assume(
+            _amount > minFuzzAmount * maxDivider && _amount < maxFuzzAmount
+        );
         // vm.assume(_profit > minFuzzAmount * maxDivider && _profit < maxFuzzAmount);
         vm.assume(_divider > 0 && _divider < maxDivider);
         vm.assume(_secondDivider > 0 && _secondDivider < maxDivider);
@@ -251,13 +265,22 @@ contract OperationTest is Setup {
 
         // verify users earned profit
         assertGt(asset.balanceOf(user), _amount, "!final balance");
-        assertGt(asset.balanceOf(secondUser), secondUserAmount, "!final balance");
+        assertGt(
+            asset.balanceOf(secondUser),
+            secondUserAmount,
+            "!final balance"
+        );
         assertGt(asset.balanceOf(thirdUser), thirdUserAmount, "!final balance");
 
         // collect all earned fees
-        uint256 expectedFees = (totalProfit * strategy.performanceFee()) / MAX_BPS;
+        uint256 expectedFees = (totalProfit * strategy.performanceFee()) /
+            MAX_BPS;
         redeemAll(strategy, performanceFeeRecipient);
-        assertGe(asset.balanceOf(performanceFeeRecipient), expectedFees, "!fee balance");
+        assertGe(
+            asset.balanceOf(performanceFeeRecipient),
+            expectedFees,
+            "!fee balance"
+        );
 
         // verify vault is empty
         checkStrategyTotals(strategy, 0, 0, 0);

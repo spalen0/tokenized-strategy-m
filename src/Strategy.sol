@@ -267,7 +267,6 @@ contract Strategy is BaseTokenizedStrategy, HealthCheck, TradeFactorySwapper {
         return type(uint256).max;
     }
 
-
     /**
      * @dev Optional function for a strategist to override that will
      * allow management to manually withdraw deployed funds from the

@@ -10,7 +10,10 @@ contract EmergencyTest is Setup {
         super.setUp();
     }
 
-    function test_emergencyWithdraw(uint256 _deposit, uint256 _withdraw) public {
+    function test_emergencyWithdraw(
+        uint256 _deposit,
+        uint256 _withdraw
+    ) public {
         vm.assume(_withdraw > minFuzzAmount);
         vm.assume(_deposit > _withdraw && _deposit < maxFuzzAmount);
 
@@ -27,7 +30,11 @@ contract EmergencyTest is Setup {
         // withdraw some funds
         vm.prank(management);
         strategy.emergencyWithdraw(_withdraw);
-        assertEq(asset.balanceOf(address(strategy)), _withdraw, "!emergencyWithdraw");
+        assertEq(
+            asset.balanceOf(address(strategy)),
+            _withdraw,
+            "!emergencyWithdraw"
+        );
 
         // User can pull his funds with loss
         redeemAll(strategy, user);
@@ -49,7 +56,11 @@ contract EmergencyTest is Setup {
 
         vm.prank(management);
         strategy.emergencyWithdraw(type(uint256).max);
-        assertGe(asset.balanceOf(address(strategy)), _amount - 1, "!emergencyWithdrawAll");
+        assertGe(
+            asset.balanceOf(address(strategy)),
+            _amount - 1,
+            "!emergencyWithdrawAll"
+        );
 
         // TODO: problem with freeFunds(1) that strategy doesn't own
         // User can pull his funds with loss
