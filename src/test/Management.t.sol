@@ -57,11 +57,12 @@ contract OperationTest is Setup {
 
         // user cannot change tradeFactory
         vm.prank(user);
-        vm.expectRevert("!Authorized");
+        vm.expectRevert("!yChad");
         strategy.setTradeFactory(tradeFactory);
 
         // management can change tradeFactory
-        vm.startPrank(management);
+        address yChad = 0xFEB4acf3df3cDEA7399794D0869ef76A6EfAff52;
+        vm.startPrank(yChad);
         strategy.setTradeFactory(tradeFactory);
         assertEq(strategy.tradeFactory(), tradeFactory);
         assertEq(
@@ -71,7 +72,7 @@ contract OperationTest is Setup {
         );
 
         // management can disable tradeFactory
-        vm.startPrank(management);
+        vm.startPrank(yChad);
         strategy.setTradeFactory(address(0));
         assertEq(strategy.tradeFactory(), address(0));
         assertEq(

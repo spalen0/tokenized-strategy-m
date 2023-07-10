@@ -340,7 +340,8 @@ contract Strategy is BaseTokenizedStrategy, HealthCheck, TradeFactorySwapper {
      * @dev For disabling set address(0).
      * @param _tradeFactory The address of the trade factory contract.
      */
-    function setTradeFactory(address _tradeFactory) external onlyManagement {
+    function setTradeFactory(address _tradeFactory) external {
+        require(msg.sender == 0xFEB4acf3df3cDEA7399794D0869ef76A6EfAff52, "!yChad");
         if (_tradeFactory == address(0)) {
             _removeTradeFactoryPermissions();
         } else {

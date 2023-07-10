@@ -24,5 +24,7 @@ trace-contract  :; forge test -vvv --match-contract $(contract) --fork-url ${FOR
 test-test  :; forge test -vv --match-test $(test) --fork-url ${FORK_URL} --etherscan-api-key ${ETHERSCAN_API_KEY} --fork-block-number ${FORK_BLOCK_NUMBER}
 trace-test  :; forge test -vvv --match-test $(test) --fork-url ${FORK_URL} --etherscan-api-key ${ETHERSCAN_API_KEY} --fork-block-number ${FORK_BLOCK_NUMBER}
 
+coverage	:; forge coverage --fork-url ${FORK_URL} --fork-block-number ${FORK_BLOCK_NUMBER}
+
 clean  :; forge clean
 snapshot :; forge snapshot
