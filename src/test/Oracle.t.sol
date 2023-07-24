@@ -31,6 +31,7 @@ contract OracleTest is Setup {
             int256(_delta)
         );
 
+        // TODO: verify values
         assertLt(currentApr, negativeDebtChangeApr, "negative change");
         assertGt(currentApr, positiveDebtChangeApr, "positive change");
     }
