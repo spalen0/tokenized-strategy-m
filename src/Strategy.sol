@@ -66,7 +66,7 @@ contract Strategy is BaseTokenizedStrategy, HealthCheck, TradeFactorySwapper {
         IMorpho.Market memory market = morpho.market(aToken);
         require(market.underlyingToken == asset, "!asset");
 
-        ERC20(asset).approve(_morpho, type(uint256).max);
+        require(ERC20(asset).approve(_morpho, type(uint256).max), "!approve");
         // add reward token for swapping
         _addToken(MORPHO_TOKEN, asset);
     }

@@ -90,8 +90,8 @@ contract StrategyAprOracle is AprOracleBase {
         /// Pool withdraw ///
 
         // Withdraw supply on pool.
+        // slither-disable-next-line uninitialized-local
         PoolData memory poolData;
-        // uint256 withdrawnFromPool;
         if (supplyBalance.onPool > 0) {
             poolData.withdrawnFromPool += Math.min(
                 WadRayMath.rayMul(
@@ -223,6 +223,7 @@ contract StrategyAprOracle is AprOracleBase {
         address _asset
     ) private view returns (uint256 supplyRate, uint256 variableBorrowRate) {
         ILendingPool.ReserveData memory reserve = POOL.getReserveData(_asset);
+        // slither-disable-next-line uninitialized-local
         PoolRatesVars memory vars;
         (
             vars.availableLiquidity,
