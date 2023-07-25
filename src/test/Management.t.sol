@@ -5,7 +5,7 @@ import "forge-std/console.sol";
 import {Setup} from "./utils/Setup.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract OperationTest is Setup {
+contract ManagementTest is Setup {
     function setUp() public override {
         super.setUp();
     }

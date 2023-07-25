@@ -35,14 +35,14 @@ contract Strategy is BaseTokenizedStrategy, HealthCheck, TradeFactorySwapper {
     address public rewardsDistributor =
         0x3B14E5C73e0A56D607A8688098326fD4b4292135;
     // Max gas used for matching with p2p deals
-    uint256 public maxGasForMatching = 100000;
+    uint256 public maxGasForMatching = 100_000;
 
     // Morpho is a contract to handle interaction with the protocol
-    IMorpho public morpho;
+    IMorpho public immutable morpho;
     // Lens is a contract to fetch data about Morpho protocol
-    ILens public lens;
+    ILens public immutable lens;
     // aToken = Morpho Aave Market for want token
-    address public aToken;
+    address public immutable aToken;
 
     /// @notice Emitted when maxGasForMatching is updated.
     /// @param maxGasForMatching The new maxGasForMatching value.
