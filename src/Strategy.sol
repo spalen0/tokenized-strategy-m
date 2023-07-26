@@ -265,7 +265,10 @@ contract Strategy is BaseTokenizedStrategy, HealthCheck, TradeFactorySwapper {
         if (market.isWithdrawPaused) {
             return 0;
         }
-        (uint256 p2p, uint256 aave, ) = lens.getCurrentSupplyBalanceInOf(aToken, address(this));
+        (uint256 p2p, uint256 aave, ) = lens.getCurrentSupplyBalanceInOf(
+            aToken,
+            address(this)
+        );
         if (aave > 0) {
             // withdraw max possible liquidity from aave
             aave = ERC20(asset).balanceOf(aToken);

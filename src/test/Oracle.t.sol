@@ -41,7 +41,9 @@ contract OracleTest is Setup {
         // amount must be high enough to move aave rates
         _amount = bound(_amount, minFuzzAmount * MAX_BPS, maxFuzzAmount);
         // don't remove all funds
-        _percentChange = uint16(bound(uint256(_percentChange), 10, MAX_BPS - 10));
+        _percentChange = uint16(
+            bound(uint256(_percentChange), 10, MAX_BPS - 10)
+        );
 
         mintAndDepositIntoStrategy(strategy, user, _amount);
 
