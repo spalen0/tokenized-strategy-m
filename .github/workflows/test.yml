@@ -1,11 +1,11 @@
 name: test
 
-on: [push]
-  # push:
-  #   branches:
-  #   - master
-  #   - develop
-  # pull_request:
+on:
+  push:
+    branches:
+    - master
+    - develop
+  pull_request:
 
 env:
   FOUNDRY_PROFILE: ci
@@ -30,13 +30,10 @@ jobs:
       - name: Run Forge build
         run: |
           forge --version
-          make size
+          forge build --sizes
         id: build
 
       - name: Run Forge tests
         run: |
-          make test
-        env:
-          ETH_RPC_URL: ${{ secrets.ETH_RPC_URL }}
-          ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
+          forge test -vvv --fork-url ${{ secrets.ETH_RPC_URL }} --etherscan-api-key  ${{ secrets.ETHERSCAN_API_KEY }}
         id: test
