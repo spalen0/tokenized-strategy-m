@@ -26,7 +26,7 @@ import {IRewardsDistributor} from "./interfaces/morpho/IRewardsDistributor.sol";
 // NOTE: To implement permissioned functions you can use the onlyManagement and onlyKeepers modifiers
 
 contract Strategy is BaseTokenizedStrategy, HealthCheck, TradeFactorySwapper {
-    // using SafeERC20 for ERC20;
+    using SafeERC20 for ERC20;
 
     // reward token, not currently listed
     address internal constant MORPHO_TOKEN =
@@ -66,7 +66,7 @@ contract Strategy is BaseTokenizedStrategy, HealthCheck, TradeFactorySwapper {
         IMorpho.Market memory market = morpho.market(aToken);
         require(market.underlyingToken == asset, "!asset");
 
-        require(ERC20(asset).approve(_morpho, type(uint256).max), "!approve");
+        ERC20(asset).safeApprove(_morpho, type(uint256).max);
         // add reward token for swapping
         _addToken(MORPHO_TOKEN, asset);
     }

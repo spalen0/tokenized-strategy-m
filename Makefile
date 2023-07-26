@@ -8,11 +8,11 @@ size  :; forge build --sizes
 # storage inspection
 inspect :; forge inspect ${contract} storage-layout --pretty
 
-contract=LiquidityTest
+contract=EmergencyTest
 test=testTradeFactory
 
 FORK_URL := ${ETH_RPC_URL} 
-FORK_BLOCK_NUMBER := 17762168
+FORK_BLOCK_NUMBER := 17776160
 
 # local tests without fork
 test  :; forge test -vv --fork-url ${FORK_URL} --etherscan-api-key ${ETHERSCAN_API_KEY} --fork-block-number ${FORK_BLOCK_NUMBER}

@@ -38,7 +38,7 @@ contract OracleTest is Setup {
 
     function test_oracle(uint256 _amount, uint16 _percentChange) public {
         // amount must be high enough to move aave rates
-        vm.assume(_amount > minFuzzAmount && _amount < maxFuzzAmount);
+        _amount = bound(_amount, minFuzzAmount * MAX_BPS, maxFuzzAmount);
         _percentChange = uint16(bound(uint256(_percentChange), 10, MAX_BPS));
 
         mintAndDepositIntoStrategy(strategy, user, _amount);
