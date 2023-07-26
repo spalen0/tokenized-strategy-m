@@ -5,6 +5,7 @@ import {BaseTokenizedStrategy} from "@tokenized-strategy/BaseTokenizedStrategy.s
 import {HealthCheck} from "@periphery/HealthCheck/HealthCheck.sol";
 import {TradeFactorySwapper} from "@periphery/swappers/TradeFactorySwapper.sol";
 
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -264,7 +265,13 @@ contract Strategy is BaseTokenizedStrategy, HealthCheck, TradeFactorySwapper {
         if (market.isWithdrawPaused) {
             return 0;
         }
-        return type(uint256).max;
+        (uint256 p2p, uint256 aave, ) = lens.getCurrentSupplyBalanceInOf(aToken, address(this));
+        if (aave > 0) {
+            // withdraw max possible liquidity from aave
+            aave = ERC20(asset).balanceOf(aToken);
+        }
+        // withdraw all p2p and all liquidity from aave
+        return p2p + aave + ERC20(asset).balanceOf(address(this));
     }
 
     /**
@@ -274,6 +281,9 @@ contract Strategy is BaseTokenizedStrategy, HealthCheck, TradeFactorySwapper {
      * @param _amount The amount of asset to attempt to free. Scaled to max available.
      */
     function _emergencyWithdraw(uint256 _amount) internal override {
+        // scale down to max available liquidity
+        _amount = Math.min(_amount, availableWithdrawLimit(address(this)));
+        // morpho scales down amount to max available to the user
         morpho.withdraw(aToken, _amount);
     }
 
