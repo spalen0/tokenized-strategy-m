@@ -14,5 +14,5 @@ jobs:
           submodules: recursive
       - uses: crytic/slither-action@v0.3.0
         with:
-          slither-args: --filter-paths "test" --exclude-dependencies --print human-summary
+          slither-args: --filter-paths "test" --exclude-dependencies
           fail-on: 'medium'
