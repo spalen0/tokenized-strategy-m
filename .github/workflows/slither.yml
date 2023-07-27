@@ -1,9 +1,9 @@
 name: Slither Analysis
-on: [push]
-  # push:
-  #   branches:
-  #   - master
-  # pull_request:
+on:
+  push:
+    branches:
+    - master
+  pull_request:
 
 jobs:
   analyze:
