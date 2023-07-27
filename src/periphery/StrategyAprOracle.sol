@@ -52,6 +52,7 @@ contract StrategyAprOracle is AprOracleBase {
                 _strategy
             );
         } else if (_delta > 0) {
+        // slither-disable-next-line unused-return
             (apr, , , ) = ILens(strategy.lens()).getNextUserSupplyRatePerYear(
                 aToken,
                 _strategy,
@@ -225,6 +226,7 @@ contract StrategyAprOracle is AprOracleBase {
         ILendingPool.ReserveData memory reserve = POOL.getReserveData(_asset);
         // slither-disable-next-line uninitialized-local
         PoolRatesVars memory vars;
+        // slither-disable-next-line unused-return
         (
             vars.availableLiquidity,
             vars.totalStableDebt,
@@ -237,9 +239,11 @@ contract StrategyAprOracle is AprOracleBase {
             ,
 
         ) = AAVE_DATA_PROIVDER.getReserveData(_asset);
+        // slither-disable-next-line unused-return
         (, , , , vars.reserveFactor, , , , , ) = AAVE_DATA_PROIVDER
             .getReserveConfigurationData(_asset);
 
+        // slither-disable-next-line unused-return
         (supplyRate, , variableBorrowRate) = IReserveInterestRateStrategy(
             reserve.interestRateStrategyAddress
         ).calculateInterestRates(

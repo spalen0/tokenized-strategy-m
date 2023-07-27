@@ -265,6 +265,7 @@ contract Strategy is BaseTokenizedStrategy, HealthCheck, TradeFactorySwapper {
         if (market.isWithdrawPaused) {
             return 0;
         }
+        // slither-disable-next-line unused-return
         (uint256 p2p, uint256 aave, ) = lens.getCurrentSupplyBalanceInOf(
             aToken,
             address(this)
