@@ -4,6 +4,7 @@ pragma solidity 0.8.18;
 import "forge-std/console.sol";
 import {Setup} from "./utils/Setup.sol";
 import {IMorpho} from "../interfaces/morpho/IMorpho.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract EmergencyTest is Setup {
     function setUp() public override {
@@ -14,8 +15,9 @@ contract EmergencyTest is Setup {
         uint256 _deposit,
         uint256 _withdraw
     ) public {
-        vm.assume(_withdraw > minFuzzAmount);
-        vm.assume(_deposit > _withdraw && _deposit < maxFuzzAmount);
+        // don't withdraw all, test for that is below
+        _deposit = bound(_deposit, minFuzzAmount * 2, maxFuzzAmount);
+        _withdraw = bound(_withdraw, minFuzzAmount, _deposit - minFuzzAmount);
 
         // Deposit into strategy
         mintAndDepositIntoStrategy(strategy, user, _deposit);

@@ -5,6 +5,7 @@ import "forge-std/console.sol";
 import {Setup} from "./utils/Setup.sol";
 
 import {StrategyAprOracle} from "../periphery/StrategyAprOracle.sol";
+import {IStrategyInterface} from "../interfaces/IStrategyInterface.sol";
 
 contract OracleTest is Setup {
     StrategyAprOracle public oracle;
@@ -20,6 +21,7 @@ contract OracleTest is Setup {
         // Should be greater than 0 but likely less than 100%
         assertGt(currentApr, 0, "ZERO");
         assertLt(currentApr, 1e18, "+100%");
+        assertGt(IStrategyInterface(_strategy).totalAssets(), 0, "!asset");
 
         // DONE: Uncomment to test the apr goes up and down based on debt changes
         uint256 negativeDebtChangeApr = oracle.aprAfterDebtChange(
@@ -31,7 +33,6 @@ contract OracleTest is Setup {
             int256(_delta)
         );
 
-        // TODO: verify values
         assertLt(currentApr, negativeDebtChangeApr, "negative change");
         assertGt(currentApr, positiveDebtChangeApr, "positive change");
     }
@@ -39,13 +40,14 @@ contract OracleTest is Setup {
     function test_oracle(uint256 _amount, uint16 _percentChange) public {
         // amount must be high enough to move aave rates
         _amount = bound(_amount, minFuzzAmount * MAX_BPS, maxFuzzAmount);
-        _percentChange = uint16(bound(uint256(_percentChange), 10, MAX_BPS));
+        // don't remove all funds
+        _percentChange = uint16(
+            bound(uint256(_percentChange), 10, MAX_BPS - 10)
+        );
 
         mintAndDepositIntoStrategy(strategy, user, _amount);
 
-        // TODO: adjust the number to base _perfenctChange off of.
         uint256 _delta = (_amount * _percentChange) / MAX_BPS;
-
         console.log("delta", _delta);
         console.log("amount", _amount);
         checkOracle(address(strategy), _delta);
