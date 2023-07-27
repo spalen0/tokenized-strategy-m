@@ -52,7 +52,7 @@ contract StrategyAprOracle is AprOracleBase {
                 _strategy
             );
         } else if (_delta > 0) {
-        // slither-disable-next-line unused-return
+            // slither-disable-next-line unused-return
             (apr, , , ) = ILens(strategy.lens()).getNextUserSupplyRatePerYear(
                 aToken,
                 _strategy,
