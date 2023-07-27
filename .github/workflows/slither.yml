@@ -12,7 +12,14 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
-      - uses: crytic/slither-action@v0.3.0
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
         with:
-          slither-args: --filter-paths "lib|test" --print human-summary
+          version: nightly
+
+      - name: Slither analysis
+        uses: crytic/slither-action@v0.3.0
+        with:
+          slither-args: --filter-paths "test" --exclude-dependencies
           fail-on: 'medium'
