@@ -145,10 +145,20 @@ contract Strategy is BaseTokenizedStrategy, HealthCheck, TradeFactorySwapper {
         override
         returns (uint256 _totalAssets)
     {
-        // deposit any loose funds in the strategy
-        uint256 looseAsset = _balanceAsset();
-        if (looseAsset > 0 && !TokenizedStrategy.isShutdown()) {
-            morpho.supply(aToken, address(this), looseAsset, maxGasForMatching);
+        IMorpho.MarketPauseStatus memory market = morpho.marketPauseStatus(
+            aToken
+        );
+        if (!market.isSupplyPaused) {
+            // deposit any loose funds in the strategy
+            uint256 looseAsset = _balanceAsset();
+            if (looseAsset > 0 && !TokenizedStrategy.isShutdown()) {
+                morpho.supply(
+                    aToken,
+                    address(this),
+                    looseAsset,
+                    maxGasForMatching
+                );
+            }
         }
         //total assets of the strategy:
         (, , uint256 totalUnderlying) = underlyingBalance();
@@ -272,10 +282,11 @@ contract Strategy is BaseTokenizedStrategy, HealthCheck, TradeFactorySwapper {
         );
         if (aave > 0) {
             // withdraw max possible liquidity from aave
-            aave = ERC20(asset).balanceOf(aToken);
+            uint256 aaveMax = ERC20(asset).balanceOf(aToken);
+            aave = Math.min(aave, aaveMax);
         }
         // withdraw all p2p and all liquidity from aave
-        return p2p + aave + ERC20(asset).balanceOf(address(this));
+        return p2p + aave + _balanceAsset();
     }
 
     /**

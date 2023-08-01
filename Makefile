@@ -9,7 +9,7 @@ size  :; forge build --sizes
 inspect :; forge inspect ${contract} storage-layout --pretty
 
 contract=EmergencyTest
-test=testTradeFactory
+test=test_emergencyWithdraw
 
 FORK_URL := ${ETH_RPC_URL}
 FORK_BLOCK_NUMBER := 17776160
