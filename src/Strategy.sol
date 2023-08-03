@@ -286,7 +286,7 @@ contract Strategy is BaseTokenizedStrategy, HealthCheck, TradeFactorySwapper {
             aave = Math.min(aave, aaveMax);
         }
         // withdraw all p2p and all liquidity from aave
-        return p2p + aave + _balanceAsset();
+        return p2p + aave + TokenizedStrategy.totalIdle();
     }
 
     /**

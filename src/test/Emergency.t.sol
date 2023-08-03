@@ -25,6 +25,9 @@ contract EmergencyTest is Setup {
         // DONE: Implement logic so totalDebt is _amount and totalIdle = 0.
         checkStrategyTotals(strategy, _deposit, _deposit, 0);
 
+        // simulate minimal earnings to avoid rounding error of 1 token
+        skip(1 minutes);
+
         // shutdown strategy
         vm.prank(management);
         strategy.shutdownStrategy();
@@ -44,9 +47,9 @@ contract EmergencyTest is Setup {
         vm.prank(user);
         strategy.redeem(maxRedeem, user, user);
 
-        // problem with freeFunds(1) that strategy doesn't own but user has 1 token left
-        // loss is not greater than 1 token
-        assertGe(asset.balanceOf(user), _deposit - 1, "!redeem");
+        // assert strategy is empty
+        checkStrategyTotals(strategy, 0, 0, 0);
+        assertGe(asset.balanceOf(user), _deposit, "!redeem");
     }
 
     function test_emergencyWithdrawAll(uint256 _amount) public {
@@ -56,6 +59,9 @@ contract EmergencyTest is Setup {
         mintAndDepositIntoStrategy(strategy, user, _amount);
         checkStrategyTotals(strategy, _amount, _amount, 0);
 
+        // simulate minimal earnings to avoid rounding error of 1 token
+        skip(1 minutes);
+
         // shutdown strategy
         vm.prank(management);
         strategy.shutdownStrategy();
@@ -64,16 +70,8 @@ contract EmergencyTest is Setup {
         strategy.emergencyWithdraw(type(uint256).max);
         assertGe(
             asset.balanceOf(address(strategy)),
-            _amount - 1,
+            _amount,
             "!emergencyWithdrawAll"
         );
-
-        // TODO: problem with freeFunds(1) that strategy doesn't own
-        // User can pull his funds with loss
-        // console.log("user balance", asset.balanceOf(user));
-        // console.log("user strategy balance", strategy.balanceOf(user));
-        // redeemAll(strategy, user);
-        // checkStrategyTotals(strategy, 0, 0, 0);
-        // assertGe(asset.balanceOf(user), _amount - 1, "!redeem");
     }
 }
