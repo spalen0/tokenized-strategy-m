@@ -26,7 +26,7 @@ contract EmergencyTest is Setup {
         checkStrategyTotals(strategy, _deposit, _deposit, 0);
 
         // simulate minimal earnings to avoid rounding error of 1 token
-        skip(1 minutes);
+        skip(5 minutes);
 
         // shutdown strategy
         vm.prank(management);
@@ -60,7 +60,7 @@ contract EmergencyTest is Setup {
         checkStrategyTotals(strategy, _amount, _amount, 0);
 
         // simulate minimal earnings to avoid rounding error of 1 token
-        skip(1 minutes);
+        skip(5 minutes);
 
         // shutdown strategy
         vm.prank(management);
