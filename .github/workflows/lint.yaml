@@ -55,4 +55,4 @@ jobs:
           fetch-depth: 0
 
       - name: Run commitlint
-        uses: wagoid/commitlint-github-action@v2
+        uses: wagoid/commitlint-github-action@v5
