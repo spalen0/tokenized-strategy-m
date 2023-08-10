@@ -163,7 +163,7 @@ contract Strategy is BaseTokenizedStrategy, HealthCheck, TradeFactorySwapper {
         //total assets of the strategy:
         (, , uint256 totalUnderlying) = underlyingBalance();
         _totalAssets = _balanceAsset() + totalUnderlying;
-        require(_executHealthCheck(_totalAssets), "!healthcheck)");
+        require(_executeHealthCheck(_totalAssets), "!healthcheck)");
     }
 
     function _balanceAsset() internal view returns (uint256) {
