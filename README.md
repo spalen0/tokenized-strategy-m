@@ -151,16 +151,6 @@ forge install yearn/tokenized-strategy@API_VERSION
 
 ### Deployment
 
-#### Flatten Strategy File
-
-To deploy the Strategy you will need to flatten the Strategy.sol file. This can be done with the following command.
-
-```sh
-forge flatten src/Strategy.sol src/StrategyFlat.sol
-```
-
-For more info checkout [Foundry documentation](https://book.getfoundry.sh/reference/forge/forge-flatten).
-
 #### Contract Verification
 
 Once the Strategy is fully deployed and verified, you will need to verify the TokenizedStrategy functions. To do this, navigate to the /#code page on etherscan.
