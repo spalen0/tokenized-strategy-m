@@ -74,8 +74,10 @@ contract LiquidityTest is Setup {
         address morphoOwner = address(
             0x0b9915C13e8E184951Df0d9C0b104f8f1277648B
         );
-        IMorphoGov morphoGov = IMorphoGov(strategy.morpho());
-        IMorpho morpho = IMorpho(strategy.morpho());
+        IMorphoGov morphoGov = IMorphoGov(
+            0x777777c9898D384F785Ee44Acfe945efDFf5f3E0
+        );
+        IMorpho morpho = IMorpho(0x777777c9898D384F785Ee44Acfe945efDFf5f3E0);
 
         // Pause withdraw
         address market = strategy.aToken();

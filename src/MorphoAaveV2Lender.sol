@@ -26,22 +26,27 @@ import {IRewardsDistributor} from "./interfaces/morpho/IRewardsDistributor.sol";
 
 // NOTE: To implement permissioned functions you can use the onlyManagement and onlyKeepers modifiers
 
-contract Strategy is BaseTokenizedStrategy, HealthCheck, TradeFactorySwapper {
+contract MorphoAaveV2Lender is
+    BaseTokenizedStrategy,
+    HealthCheck,
+    TradeFactorySwapper
+{
     using SafeERC20 for ERC20;
 
     // reward token, not currently listed
     address internal constant MORPHO_TOKEN =
         0x9994E35Db50125E0DF82e4c2dde62496CE330999;
+    IMorpho internal constant MORPHO =
+        IMorpho(0x777777c9898D384F785Ee44Acfe945efDFf5f3E0);
+    ILens internal constant LENS =
+        ILens(0x507fA343d0A90786d86C7cd885f5C49263A91FF4);
+
     // used for claiming reward Morpho token
     address public rewardsDistributor =
         0x3B14E5C73e0A56D607A8688098326fD4b4292135;
     // Max gas used for matching with p2p deals
     uint256 public maxGasForMatching = 100_000;
 
-    // Morpho is a contract to handle interaction with the protocol
-    IMorpho public immutable morpho;
-    // Lens is a contract to fetch data about Morpho protocol
-    ILens public immutable lens;
     // aToken = Morpho Aave Market for want token
     address public immutable aToken;
 
@@ -56,18 +61,14 @@ contract Strategy is BaseTokenizedStrategy, HealthCheck, TradeFactorySwapper {
     constructor(
         address _asset,
         string memory _name,
-        address _morpho,
-        address _lens,
         address _aToken
     ) BaseTokenizedStrategy(_asset, _name) {
-        morpho = IMorpho(_morpho);
-        lens = ILens(_lens);
         aToken = _aToken;
 
-        IMorpho.Market memory market = morpho.market(aToken);
+        IMorpho.Market memory market = MORPHO.market(aToken);
         require(market.underlyingToken == asset, "!asset");
 
-        ERC20(asset).safeApprove(_morpho, type(uint256).max);
+        ERC20(asset).safeApprove(address(MORPHO), type(uint256).max);
         // add reward token for swapping
         _addToken(MORPHO_TOKEN, asset);
     }
@@ -88,7 +89,7 @@ contract Strategy is BaseTokenizedStrategy, HealthCheck, TradeFactorySwapper {
      * to deposit in the yield source.
      */
     function _deployFunds(uint256 _amount) internal override {
-        morpho.supply(aToken, address(this), _amount, maxGasForMatching);
+        MORPHO.supply(aToken, address(this), _amount, maxGasForMatching);
     }
 
     /**
@@ -115,7 +116,7 @@ contract Strategy is BaseTokenizedStrategy, HealthCheck, TradeFactorySwapper {
     function _freeFunds(uint256 _amount) internal override {
         // morpho scales down amount to max available
         // https://github.com/morpho-org/morpho-v1/blob/2b4993ccb5ace70005d340298abe631a03a065bc/src/aave-v2/ExitPositionsManager.sol#L160
-        morpho.withdraw(aToken, _amount);
+        MORPHO.withdraw(aToken, _amount);
     }
 
     /**
@@ -145,14 +146,14 @@ contract Strategy is BaseTokenizedStrategy, HealthCheck, TradeFactorySwapper {
         override
         returns (uint256 _totalAssets)
     {
-        IMorpho.MarketPauseStatus memory market = morpho.marketPauseStatus(
+        IMorpho.MarketPauseStatus memory market = MORPHO.marketPauseStatus(
             aToken
         );
         if (!market.isSupplyPaused) {
             // deposit any loose funds in the strategy
             uint256 looseAsset = _balanceAsset();
             if (looseAsset > 0 && !TokenizedStrategy.isShutdown()) {
-                morpho.supply(
+                MORPHO.supply(
                     aToken,
                     address(this),
                     looseAsset,
@@ -185,7 +186,7 @@ contract Strategy is BaseTokenizedStrategy, HealthCheck, TradeFactorySwapper {
             uint256 totalBalance
         )
     {
-        (balanceInP2P, balanceOnPool, totalBalance) = lens
+        (balanceInP2P, balanceOnPool, totalBalance) = LENS
             .getCurrentSupplyBalanceInOf(aToken, address(this));
     }
 
@@ -238,7 +239,7 @@ contract Strategy is BaseTokenizedStrategy, HealthCheck, TradeFactorySwapper {
     function availableDepositLimit(
         address //_owner
     ) public view override returns (uint256) {
-        IMorpho.MarketPauseStatus memory market = morpho.marketPauseStatus(
+        IMorpho.MarketPauseStatus memory market = MORPHO.marketPauseStatus(
             aToken
         );
         if (market.isSupplyPaused || market.isWithdrawPaused) {
@@ -269,14 +270,14 @@ contract Strategy is BaseTokenizedStrategy, HealthCheck, TradeFactorySwapper {
     function availableWithdrawLimit(
         address //_owner
     ) public view override returns (uint256) {
-        IMorpho.MarketPauseStatus memory market = morpho.marketPauseStatus(
+        IMorpho.MarketPauseStatus memory market = MORPHO.marketPauseStatus(
             aToken
         );
         if (market.isWithdrawPaused) {
             return 0;
         }
         // slither-disable-next-line unused-return
-        (uint256 p2p, uint256 aave, ) = lens.getCurrentSupplyBalanceInOf(
+        (uint256 p2p, uint256 aave, ) = LENS.getCurrentSupplyBalanceInOf(
             aToken,
             address(this)
         );
@@ -299,7 +300,7 @@ contract Strategy is BaseTokenizedStrategy, HealthCheck, TradeFactorySwapper {
         // scale down to max available liquidity
         _amount = Math.min(_amount, availableWithdrawLimit(address(this)));
         // morpho scales down amount to max available to the user
-        morpho.withdraw(aToken, _amount);
+        MORPHO.withdraw(aToken, _amount);
     }
 
     // override TradeFactory virtual function

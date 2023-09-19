@@ -3,7 +3,7 @@ pragma solidity 0.8.18;
 
 import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
 
-interface IStrategyInterface is IStrategy {
+interface IMorphoAaveV2Lender is IStrategy {
     function morpho() external view returns (address);
 
     function lens() external view returns (address);

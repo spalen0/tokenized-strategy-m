@@ -4,7 +4,7 @@ pragma solidity 0.8.18;
 import {AprOracleBase} from "@periphery/AprOracle/AprOracleBase.sol";
 import {IMorpho} from "../interfaces/morpho/IMorpho.sol";
 import {ILens} from "../interfaces/morpho/ILens.sol";
-import {IStrategyInterface} from "../interfaces/IStrategyInterface.sol";
+import {IMorphoAaveV2Lender} from "../interfaces/IMorphoAaveV2Lender.sol";
 import {ILendingPool} from "../interfaces/aave/ILendingPool.sol";
 import {IProtocolDataProvider} from "../interfaces/aave/IProtocolDataProvider.sol";
 import {IReserveInterestRateStrategy} from "../interfaces/aave/IReserveInterestRateStrategy.sol";
@@ -18,6 +18,10 @@ contract StrategyAprOracle is AprOracleBase {
         ILendingPool(0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9);
     IProtocolDataProvider internal constant AAVE_DATA_PROIVDER =
         IProtocolDataProvider(0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d);
+    ILens internal constant LENS =
+        ILens(0x507fA343d0A90786d86C7cd885f5C49263A91FF4);
+    IMorpho internal constant MORPHO =
+        IMorpho(0x777777c9898D384F785Ee44Acfe945efDFf5f3E0);
 
     constructor() AprOracleBase("Morpho Aave v2 Apr Oracle") {}
 
@@ -44,16 +48,13 @@ contract StrategyAprOracle is AprOracleBase {
         address _strategy,
         int256 _delta
     ) external view override returns (uint256 apr) {
-        IStrategyInterface strategy = IStrategyInterface(_strategy);
+        IMorphoAaveV2Lender strategy = IMorphoAaveV2Lender(_strategy);
         address aToken = strategy.aToken();
         if (_delta == 0) {
-            apr = ILens(strategy.lens()).getCurrentUserSupplyRatePerYear(
-                aToken,
-                _strategy
-            );
+            apr = LENS.getCurrentUserSupplyRatePerYear(aToken, _strategy);
         } else if (_delta > 0) {
             // slither-disable-next-line unused-return
-            (apr, , , ) = ILens(strategy.lens()).getNextUserSupplyRatePerYear(
+            (apr, , , ) = LENS.getNextUserSupplyRatePerYear(
                 aToken,
                 _strategy,
                 uint256(_delta)
@@ -73,17 +74,14 @@ contract StrategyAprOracle is AprOracleBase {
     }
 
     function aprAfterLiquidityWithdraw(
-        IStrategyInterface _strategy,
+        IMorphoAaveV2Lender _strategy,
         address _aToken,
         uint256 _amount
     ) internal view returns (uint256 apr) {
-        IMorpho morpho = IMorpho(_strategy.morpho());
-        ILens lens = ILens(_strategy.lens());
-
-        ILens.Indexes memory indexes = lens.getIndexes(_aToken);
-        IMorpho.Market memory market = morpho.market(_aToken);
-        IMorpho.Delta memory delta = morpho.deltas(_aToken);
-        IMorpho.SupplyBalance memory supplyBalance = morpho.supplyBalanceInOf(
+        ILens.Indexes memory indexes = LENS.getIndexes(_aToken);
+        IMorpho.Market memory market = MORPHO.market(_aToken);
+        IMorpho.Delta memory delta = MORPHO.deltas(_aToken);
+        IMorpho.SupplyBalance memory supplyBalance = MORPHO.supplyBalanceInOf(
             _aToken,
             address(_strategy)
         );
@@ -135,11 +133,11 @@ contract StrategyAprOracle is AprOracleBase {
 
         // Promote pool suppliers.
         if (_amount > 0 && supplyBalance.inP2P > 0 && !market.isP2PDisabled) {
-            address firstPoolSupplier = morpho.getHead(
+            address firstPoolSupplier = MORPHO.getHead(
                 _aToken,
                 IMorpho.PositionType.SUPPLIERS_ON_POOL
             );
-            uint256 firstPoolSupplierBalance = morpho
+            uint256 firstPoolSupplierBalance = MORPHO
                 .supplyBalanceInOf(_aToken, firstPoolSupplier)
                 .onPool;
 

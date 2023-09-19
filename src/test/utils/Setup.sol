@@ -6,8 +6,10 @@ import {ExtendedTest} from "./ExtendedTest.sol";
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-import {Strategy} from "../../Strategy.sol";
-import {IStrategyInterface} from "../../interfaces/IStrategyInterface.sol";
+import {MorphoAaveV2Lender} from "../../MorphoAaveV2Lender.sol";
+import {MorphoAaveV2Factory} from "../../MorphoAaveV2Factory.sol";
+import {IMorphoAaveV2Lender} from "../../interfaces/IMorphoAaveV2Lender.sol";
+import {IMorphoAaveV2Factory} from "../../interfaces/IMorphoAaveV2Factory.sol";
 
 // Inherit the events so they can be checked if desired.
 import {IEvents} from "@tokenized-strategy/interfaces/IEvents.sol";
@@ -23,7 +25,8 @@ interface IFactory {
 contract Setup is ExtendedTest, IEvents {
     // Contract instancees that we will use repeatedly.
     ERC20 public asset;
-    IStrategyInterface public strategy;
+    IMorphoAaveV2Lender public strategy;
+    IMorphoAaveV2Factory public strategyFactory;
 
     mapping(string => address) public tokenAddrs;
     mapping(string => address) public aaveTokenAddrs;
@@ -59,9 +62,11 @@ contract Setup is ExtendedTest, IEvents {
         decimals = asset.decimals();
 
         // Deploy strategy and set variables
-        strategy = IStrategyInterface(setUpStrategy());
+        strategy = IMorphoAaveV2Lender(setUpStrategy());
 
         factory = strategy.FACTORY();
+
+        strategyFactory = setUpStrategyFactory();
 
         // label all the used addresses for traces
         vm.label(keeper, "keeper");
@@ -73,18 +78,14 @@ contract Setup is ExtendedTest, IEvents {
     }
 
     function setUpStrategy() public returns (address) {
-        address morpho = 0x777777c9898D384F785Ee44Acfe945efDFf5f3E0;
-        address lens = 0x507fA343d0A90786d86C7cd885f5C49263A91FF4;
         address aaveToken = aaveTokenAddrs[asset.symbol()];
 
         // we save the strategy as a IStrategyInterface to give it the needed interface
-        IStrategyInterface _strategy = IStrategyInterface(
+        IMorphoAaveV2Lender _strategy = IMorphoAaveV2Lender(
             address(
-                new Strategy(
+                new MorphoAaveV2Lender(
                     address(asset),
-                    "Tokenized Strategy",
-                    morpho,
-                    lens,
+                    "MorphoAaveV2Lender",
                     aaveToken
                 )
             )
@@ -99,12 +100,26 @@ contract Setup is ExtendedTest, IEvents {
 
         vm.prank(management);
         _strategy.acceptManagement();
+        
 
         return address(_strategy);
     }
 
+    function setUpStrategyFactory() public returns (IMorphoAaveV2Factory) {
+        IMorphoAaveV2Factory _factory = IMorphoAaveV2Factory(
+            address(
+                new MorphoAaveV2Factory(
+                    management,
+                    performanceFeeRecipient,
+                    keeper
+                )
+            )
+        );
+        return _factory;
+    }
+
     function depositIntoStrategy(
-        IStrategyInterface _strategy,
+        IMorphoAaveV2Lender _strategy,
         address _user,
         uint256 _amount
     ) public {
@@ -116,7 +131,7 @@ contract Setup is ExtendedTest, IEvents {
     }
 
     function mintAndDepositIntoStrategy(
-        IStrategyInterface _strategy,
+        IMorphoAaveV2Lender _strategy,
         address _user,
         uint256 _amount
     ) public {
@@ -124,9 +139,23 @@ contract Setup is ExtendedTest, IEvents {
         depositIntoStrategy(_strategy, _user, _amount);
     }
 
+    function mintAndDepositIntoStrategy(
+        IMorphoAaveV2Lender _strategy,
+        address _user,
+        uint256 _amount,
+        ERC20 _asset
+    ) public {
+        airdrop(_asset, _user, _amount);
+        vm.prank(_user);
+        ERC20(_asset).approve(address(_strategy), _amount);
+
+        vm.prank(_user);
+        _strategy.deposit(_amount, _user);
+    }
+
     // For checking the amounts in the strategy
     function checkStrategyTotals(
-        IStrategyInterface _strategy,
+        IMorphoAaveV2Lender _strategy,
         uint256 _totalAssets,
         uint256 _totalDebt,
         uint256 _totalIdle
@@ -142,7 +171,7 @@ contract Setup is ExtendedTest, IEvents {
         deal(address(_asset), _to, balanceBefore + _amount);
     }
 
-    function redeemAll(IStrategyInterface _strategy, address _user) public {
+    function redeemAll(IMorphoAaveV2Lender _strategy, address _user) public {
         uint256 amount = _strategy.balanceOf(_user);
         vm.prank(_user);
         _strategy.redeem(amount, _user, _user);
