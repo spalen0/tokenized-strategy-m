@@ -5,7 +5,7 @@ import "forge-std/console.sol";
 import {Setup} from "./utils/Setup.sol";
 
 import {StrategyAprOracle} from "../periphery/StrategyAprOracle.sol";
-import {IStrategyInterface} from "../interfaces/IStrategyInterface.sol";
+import {IMorphoAaveV2Lender} from "../interfaces/IMorphoAaveV2Lender.sol";
 
 contract OracleTest is Setup {
     StrategyAprOracle public oracle;
@@ -21,7 +21,7 @@ contract OracleTest is Setup {
         // Should be greater than 0 but likely less than 100%
         assertGt(currentApr, 0, "ZERO");
         assertLt(currentApr, 1e18, "+100%");
-        assertGt(IStrategyInterface(_strategy).totalAssets(), 0, "!asset");
+        assertGt(IMorphoAaveV2Lender(_strategy).totalAssets(), 0, "!asset");
 
         // DONE: Uncomment to test the apr goes up and down based on debt changes
         uint256 negativeDebtChangeApr = oracle.aprAfterDebtChange(
