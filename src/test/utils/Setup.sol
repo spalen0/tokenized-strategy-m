@@ -100,7 +100,6 @@ contract Setup is ExtendedTest, IEvents {
 
         vm.prank(management);
         _strategy.acceptManagement();
-        
 
         return address(_strategy);
     }
